@@ -1,27 +1,55 @@
-version: '2'
+version: "3"
 services:
 
+  proxy:
+    build: ./services/proxy/.
+    volumes: 
+      - ./services/proxy/nginx.conf:/etc/nginx/nginx.conf
+    ports:
+      - "8080:8080"
+    links:
+    - web
+    - nodered
+    - portainer
+    networks:
+      - deathstar
+
+  web:
+    image: hashicorp/http-echo
+    command: ["-text", "deathstar"]
+    expose:
+      - 5678
+    networks:
+      - deathstar
+
   portainer:
-    container_name: portainer
     image: portainer/portainer
     restart: unless-stopped
+    networks:
+      - deathstar
     ports:
-      - 9000:9000
+      - "9000:9000"
+    expose:
+      - 9000
+      - 8000
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - /mnt/data/volumes/portainer/data:/data
+      - /volumes/portainer/data:/data
 
   nodered:
-    container_name: nodered
-    build: /mnt/data/services/nodered/.
+    networks:
+      - deathstar
+    build: ./services/nodered/.
     restart: unless-stopped
     user: "0"
     privileged: true
-    env_file: /mnt/data/services/nodered/nodered.env
-    ports:
-      - 1880:1880
+    env_file: ./services/nodered/nodered.env
+    ports: 
+      - "1880:1880"
+    expose:
+      - 1880
     volumes:
-      - /mnt/data/volumes/nodered/data:/data
+      - /volumes/nodered/data:/data
 
   # pihole:
   #   container_name: pihole
@@ -87,3 +115,5 @@ services:
   #     - MYSQL_USER=nextcloud
   #   restart: unless-stopped
 
+networks:
+  deathstar:
